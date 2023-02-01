@@ -1,7 +1,9 @@
 #include <math.h>
 #include <TFT_eSPI.h>   // Board lib for ESP32 TTGO T-Display (ESP32 Dev Module)
-
 #include "time.h"
+
+#include "Config.h"
+#include "Controller.h"
 #include "Map.h"
 #include "Texture.h"
 
@@ -15,20 +17,7 @@
 // display
 TFT_eSPI display = TFT_eSPI(); // Invoke library, pins defined in User_Setup.h
 
-//bits of fptype >= (number of bits for sqRes) + fp + (1 bit for sign) + X
-//where X = max((number of bits for mapSize), (number of bits for the integral part of tan/ctan))
-const int16_t fp = 14;
-typedef int32_t fptype;
-
-const int32_t screenW = 240, screenH = 135, screenWh = screenW / 2, screenHh = screenH / 2;
-const int16_t around = 6 * screenW, aroundh = around / 2, aroundq = around / 4, around3q = 3 * aroundq; //FOV = 60 degs (6 FOVs = 360 degrees)
 uint16_t* screen = new uint16_t[screenW * screenH];
-
-const int sqRes = (1 << 10), sqResh = sqRes / 2;
-const fptype sqRes_fp = (fptype)sqRes << fp;
-const int safety_dist = 3; //to wall
-
-const int texRes = (1 << 7);
 
 const int16_t mapSizeHeight = mapHeight * sqRes, mapSizeWidth = mapWidth * sqRes;
 const fptype mapSizeWidth_fp = (((fptype)mapSizeWidth) << fp), mapSizeHeight_fp = (((fptype)mapSizeHeight) << fp);
@@ -37,9 +26,9 @@ int32_t Tan_fp[around]; // fp bits fixed point
 int32_t CTan_fp[around];
 
 //initial
-int16_t xC = 2.5 * sqRes;
-int16_t yC = (mapHeight - 2.5) * sqRes; //flip vertically
-int16_t angleC = 1400;
+int xC = 2.5 * sqRes;
+int yC = 2.5 * sqRes;
+int angleC = 1400;
 int elevation_perc = 0; //as percentage from wall half height
 
 float X2Rad(int X)
@@ -73,22 +62,12 @@ void setup()
             CTan_fp[a] = -maxTan;
 	}
 
-	// vertically mirror the map (it's more natural to edit it this way)
-	for (i = 0; i < mapHeight/2; i++)
-		for (j = 0; j < mapWidth; j++)
-		{
-			int16_t aux = Map[i][j];
-			Map[i][j] = Map[mapHeight - 1 - i][j];
-			Map[mapHeight - 1 - i][j] = aux;
-		}
-
 	display.init();
 	display.setRotation(1);
 	display.setSwapBytes(true);
 	display.fillScreen(TFT_BLACK);
 
-	pinMode(BUTTON1, INPUT);
-	pinMode(BUTTON2, INPUT);
+    initController();
 
     Serial.begin(115200);
     Serial.println("Start");
@@ -160,7 +139,7 @@ int CastY(int16_t angle, fptype& xHit_fp, fptype& yHit_fp) //hit horizontal wall
 //returns wall ID (as map position and cell face)
 int Cast(int angle, int& xHit, int& yHit)
 {
-    fptype xX_fp = 30000, yX_fp = xX_fp, xY_fp = xX_fp, yY_fp = xX_fp;
+    fptype xX_fp = 1000000000, yX_fp = xX_fp, xY_fp = xX_fp, yY_fp = xX_fp;
     int wallIDX = CastX(angle, xX_fp, yX_fp);
     int wallIDY = CastY(angle, xY_fp, yY_fp);
     //choose the nearest hit point
@@ -182,8 +161,8 @@ void RenderColumn(int col, int h, int textureColumn)
 {
     int32_t Dh_fp = (texRes << 22) / h; //1 row in screen space is this many rows in texture space; use fixed point
     int32_t textureRow_fp = 0;
-    int minRow = screenHh - h / 2;
-    //int minRow = ((100 - elevation_perc) * (2 * screenHh - h) / 2 + elevation_perc * screenHh) / 100;
+    //int minRow = screenHh - h / 2;
+    int minRow = ((100 - elevation_perc) * (2 * screenHh - h) / 2 + elevation_perc * screenHh) / 100;
     int maxRow = min(minRow + h, screenH);
 
     int minRowOrig = minRow;
@@ -228,6 +207,15 @@ void Render()
 
         RenderColumn(col, h, textureColumn);
 	}
+
+    //mirror image; we need this because the map's CS is left handed while the ray casting works right handed
+    for (int row = 0; row < screenH; row++)
+        for (int col = 0; col < screenWh; col++) {
+            int16_t aux = *(screen + row * screenW + col);
+            *(screen + row * screenW + col) = *(screen + row * screenW + screenW - 1 - col);
+            *(screen + row * screenW + screenW - 1 - col) = aux;
+        }
+    
 	auto t_render = millis();
 
 	display.pushImage(0, 0, screenW, screenH, screen);
@@ -245,26 +233,7 @@ void Render()
 void loop()
 {
 	Render();
-
-	// move viewer
-	if (digitalRead(BUTTON1) == LOW)
-	{
-		xC += 20 * cos(X2Rad(angleC));
-		yC += 20 * sin(X2Rad(angleC));
-	}
-	if (digitalRead(BUTTON2) == LOW)
-	{
-		xC -= 20 * cos(X2Rad(angleC));
-		yC -= 20 * sin(X2Rad(angleC));
-	}
-	int touch2 = touchRead(T2);
-	int touch5 = touchRead(T5);
-	Serial.println("Touch2 = " + String(touch2) + " Touch5 = " + String(touch5));
-	int touchTh = 80;
-	if (touch2 < touchTh)
-		angleC = (angleC + (touchTh - touch2) / 5) % around;
-	if (touch5 < touchTh)
-		angleC = (angleC - (touchTh - touch5) / 5) % around;
+    loopController(xC, yC, angleC, around);
 
     vTaskDelay(10); // limit the render FPS in order to reduce the render_refresh/scrren_refresh interferences
 }
