@@ -31,20 +31,17 @@ int yC = 2.5 * sqRes;
 int angleC = 1400;
 int elevation_perc = 0; //as percentage from wall half height
 
-float X2Rad(int X)
-{
+float X2Rad(int X) {
 	return (float)X * 3.1415f / aroundh;
 }
 
-void setup()
-{
+void setup() {
 	int16_t i, j;
 	// precalculate
-	for (int16_t a = 0; a < around; a++)
-	{
+	for (int16_t a = 0; a < around; a++) {
 		float angf = X2Rad(a);
 
-        //tangent (theoretical range is [-inf..+inf], in practice (-128..+128) is fine)
+        // tangent (theoretical range is [-inf..+inf], in practice (-128..+128) is fine)
         fptype maxTan = (((fptype)128) << fp) - 1;
 		float temp = tan(angf) * (1 << fp);
         Tan_fp[a] = (fptype)temp;
@@ -74,18 +71,16 @@ void setup()
 }
 
 //returns wall ID (as map position and cell face)
-int CastX(int16_t angle, fptype& xHit_fp, fptype& yHit_fp) //hit vertical walls ||
-{
+int CastX(int16_t angle, fptype& xHit_fp, fptype& yHit_fp) { // hit vertical walls ||
     if ((angle == aroundq) || (angle == around3q))
-        return -1; //CastY() will hit a wall correctly
+        return -1; // CastY() will hit a wall correctly
 
-    //prepare as for 1st or 4th quadrant
+    // prepare as for 1st or 4th quadrant
     int x = (xC / sqRes) * sqRes + sqRes;
     int dx = sqRes,   adjXMap = 0;
     fptype dy_fp = sqRes * Tan_fp[angle];
-    //2nd or 3rd quadrant
-    if ((aroundq < angle) && (angle < around3q))
-	{
+    // 2nd or 3rd quadrant
+    if ((aroundq < angle) && (angle < around3q)) {
         x -= sqRes;
         adjXMap = -1;
         dx = -dx;
@@ -94,8 +89,7 @@ int CastX(int16_t angle, fptype& xHit_fp, fptype& yHit_fp) //hit vertical walls 
     yHit_fp = (((fptype)yC) << fp) + (x - xC) * Tan_fp[angle];
 
     while ((0 < x) && (x < mapSizeWidth) && (0 < yHit_fp) && (yHit_fp < mapSizeHeight_fp) &&
-           (Map[(yHit_fp >> fp) / sqRes][x / sqRes + adjXMap] == 0))
-	{
+           (Map[(yHit_fp >> fp) / sqRes][x / sqRes + adjXMap] == 0)) {
         x += dx;
         yHit_fp += dy_fp;
     }
@@ -105,18 +99,16 @@ int CastX(int16_t angle, fptype& xHit_fp, fptype& yHit_fp) //hit vertical walls 
     return int((yHit_fp / sqRes_fp) * mapWidth + (x / sqRes + adjXMap));
 }
 
-//returns wall ID (as map position and cell face)
-int CastY(int16_t angle, fptype& xHit_fp, fptype& yHit_fp) //hit horizontal walls ==
-{
+// returns wall ID (as map position and cell face)
+int CastY(int16_t angle, fptype& xHit_fp, fptype& yHit_fp) { // hit horizontal walls ==
     if ((angle == 0) || (angle == aroundh))
-        return -1; //CastX() will hit a wall correctly
+        return -1; // CastX() will hit a wall correctly
 
-    //prepare as for 1st or 2nd quadrant
+    // prepare as for 1st or 2nd quadrant
     int y = (yC / sqRes) * sqRes + sqRes;
     int dy = sqRes,   adjYMap = 0;
     fptype dx_fp = sqRes * CTan_fp[angle];
-    if (angle > aroundh) //3rd or 4th quadrants
-	{
+    if (angle > aroundh) { // 3rd or 4th quadrants
         y -= sqRes;
         adjYMap = -1;
         dy = -dy;
@@ -125,8 +117,7 @@ int CastY(int16_t angle, fptype& xHit_fp, fptype& yHit_fp) //hit horizontal wall
     xHit_fp = (((fptype)xC) << fp) + (y - yC) * CTan_fp[angle];
 
     while ((0 < xHit_fp) && (xHit_fp < mapSizeWidth_fp) && (0 < y) && (y < mapSizeHeight) &&
-           (Map[y / sqRes + adjYMap][(xHit_fp >> fp) / sqRes] == 0))
-	{
+           (Map[y / sqRes + adjYMap][(xHit_fp >> fp) / sqRes] == 0)) {
         xHit_fp += dx_fp;
         y += dy;
     }
@@ -136,57 +127,50 @@ int CastY(int16_t angle, fptype& xHit_fp, fptype& yHit_fp) //hit horizontal wall
     return int((y / sqRes + adjYMap) * mapWidth + (xHit_fp / sqRes_fp));
 }
 
-//returns wall ID (as map position and cell face)
-int Cast(int angle, int& xHit, int& yHit)
-{
+// returns wall ID (as map position and cell face)
+int Cast(int angle, int& xHit, int& yHit) {
     fptype xX_fp = 1000000000, yX_fp = xX_fp, xY_fp = xX_fp, yY_fp = xX_fp;
     int wallIDX = CastX(angle, xX_fp, yX_fp);
     int wallIDY = CastY(angle, xY_fp, yY_fp);
-    //choose the nearest hit point
-    if (llabs(((fptype)xC << fp) - xX_fp) < llabs(((fptype)xC << fp) - xY_fp)) //vertical wall ||
-	{
+    // choose the nearest hit point
+    if (llabs(((fptype)xC << fp) - xX_fp) < llabs(((fptype)xC << fp) - xY_fp)) { // vertical wall ||
         xHit = int(xX_fp >> fp);
         yHit = int(yX_fp >> fp);
         return 2 * wallIDX + 0;
     }
-    else //horizontal wall ==
-	{
+    else { // horizontal wall ==
         xHit = int(xY_fp >> fp);
         yHit = int(yY_fp >> fp);
         return 2 * wallIDY + 1;
     }
 }
 
-void RenderColumn(int col, int h, int textureColumn)
-{
-    int32_t Dh_fp = (texRes << 22) / h; //1 row in screen space is this many rows in texture space; use fixed point
+void RenderColumn(int col, int h, int textureColumn) {
+    int32_t Dh_fp = (texRes << 22) / h; // 1 row in screen space is this many rows in texture space; use fixed point
     int32_t textureRow_fp = 0;
-    //int minRow = screenHh - h / 2;
+    //int minRow = screenHh - h / 2; // no elevation
     int minRow = ((100 - elevation_perc) * (2 * screenHh - h) / 2 + elevation_perc * screenHh) / 100;
     int maxRow = min(minRow + h, screenH);
 
     int minRowOrig = minRow;
-    if (minRow < 0) //clip
-	{
+    if (minRow < 0) { // clip
         textureRow_fp = -(minRow * Dh_fp);
         minRow = 0;
     }
 
 	uint16_t* screenAddr = screen + minRow * screenW + col;
 	//const uint16_t* textureAddr = Texture + textureColumn;
-	const uint16_t* textureAddr = Texture + textureColumn * texRes; // speedup: 90 degs CCW pre-rotated texture
-    for (int row = minRow; row < maxRow; row++)
-	{
-		//*screenAddr = *(textureAddr + textureRow_fp / 1024 * texRes);
-		*screenAddr = *(textureAddr + (textureRow_fp >> 22)); // rotated texture
+	const uint16_t* textureAddr = Texture + textureColumn * texRes; // huge speedup: 90 degs pre-rotated texture
+    for (int row = minRow; row < maxRow; row++) {
+		//*screenAddr = *(textureAddr + textureRow_fp / 1024 * texRes); // access texture column wise
+		*screenAddr = *(textureAddr + (textureRow_fp >> 22)); // rotated texture - access it row wise (cache memory principles)
 		textureRow_fp += Dh_fp;
 		screenAddr += screenW;
 	}
 }
 
 auto t_prev = millis();
-void Render()
-{
+void Render() {
 	auto t_start = millis();
 
 	memset(screen, 0, sizeof(uint16_t) * screenW * screenH);
@@ -194,21 +178,20 @@ void Render()
 
 	int32_t viewerToScreen_sq = sq(screenWh) * 3; // FOV = 60 degs => viewerToScreen = screenWh * sqrt(3)
 	uint32_t textureColumn;
-	for (int16_t col = 0; col < screenW; col++)
-	{
+	for (int16_t col = 0; col < screenW; col++) {
 		int16_t ang = (screenWh - col + angleC + around) % around;
         int xHit, yHit;
         Cast(ang, xHit, yHit);
 
 		uint32_t textureColumn = ((xHit + yHit) % sqRes) * texRes / sqRes;
 
-        int dist_sq = sq(xC - xHit) + sq(yC - yHit) + 1; //+1 avoids division by zero
+        int dist_sq = sq(xC - xHit) + sq(yC - yHit) + 1; // +1 avoids division by zero
         int h = int(sqRes * sqrt((viewerToScreen_sq + sq(screenWh - col)) / (float)dist_sq) + 0.5);
 
         RenderColumn(col, h, textureColumn);
 	}
 
-    //mirror image; we need this because the map's CS is left handed while the ray casting works right handed
+    // mirror image; we need this because the map's CS is left handed while the ray casting works right handed
     for (int row = 0; row < screenH; row++)
         for (int col = 0; col < screenWh; col++) {
             int16_t aux = *(screen + row * screenW + col);
@@ -230,8 +213,7 @@ void Render()
 	t_prev = t_show;
 }
 
-void loop()
-{
+void loop() {
 	Render();
     loopController(xC, yC, angleC, around);
 
