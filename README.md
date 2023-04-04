@@ -1,6 +1,8 @@
 # Maze3D_ESP32
 3D maze rendered with ray casting (like Wolfenstein 3D) on Espressif32 microcontroller
 
+![Snapshot](/Snapshot.png)
+
 Demo: https://youtu.be/3THUXDV6uVk
 
 Built with PlatformIO.
