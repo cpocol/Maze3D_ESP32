@@ -1,5 +1,9 @@
 # Maze3D_ESP32
-3D maze rendered with ray casting on Espressif32 microcontroller
+3D maze rendered with ray casting (like Wolfenstein 3D) on Espressif32 microcontroller
+
+Demo: https://youtu.be/3THUXDV6uVk
+
+Built with PlatformIO.
 
 How to control the viewer:
 See pinout at https://f6czv.fr/en/documentation-on-esp32-and-the-ttgo-t-display
