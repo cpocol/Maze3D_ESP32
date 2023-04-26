@@ -70,8 +70,8 @@ void initController() {
 
     elevation_perc = 100 * z / sqResh; // as percentage from wall half height
 
-	pinMode(BUTTON1, INPUT_PULLUP);
-	pinMode(BUTTON2, INPUT_PULLUP);
+    pinMode(BUTTON1, INPUT_PULLUP);
+    pinMode(BUTTON2, INPUT_PULLUP);
 }
 
 void loopController(int& x, int& y, int& angle, int around) {
@@ -80,24 +80,24 @@ void loopController(int& x, int& y, int& angle, int around) {
     if (digitalRead(BUTTON2) == LOW) // pedal backward
         move(x, y, (angle + around / 2) % around);
 
-	int touchRotL = touchRead(T2);
-	int touchRotR = touchRead(T5);
-	int touchJump1 = touchRead(T3);
-	int touchJump2 = touchRead(T4);
-	int touchStrafeL = touchRead(T9);
-	int touchStrafeR = touchRead(T7);
-	int touchCrunch = touchRead(T8);
-	Serial.println("Touch2 = " + String(touchRotL) + " Touch3 = " + String(touchJump1)
+    int touchRotL = touchRead(T2);
+    int touchRotR = touchRead(T5);
+    int touchJump1 = touchRead(T3);
+    int touchJump2 = touchRead(T4);
+    int touchStrafeL = touchRead(T9);
+    int touchStrafeR = touchRead(T7);
+    int touchCrunch = touchRead(T8);
+    Serial.println("Touch2 = " + String(touchRotL) + " Touch3 = " + String(touchJump1)
         + " Touch4 = " + String(touchJump2) + " Touch5 = " + String(touchRotR)
         + " Touch9 = " + String(touchStrafeL) + " Touch8 = " + String(touchCrunch) + " Touch7 = " + String(touchStrafeR));
     int thRotL = 80, thJump1 = 80, thJump2 = 80, thRotR = 80; // chosen empirically
     int thStrafeL = 90, thCrunch = 90, thStrafeR = 90;
 
     bool bJump = false, bCrunch = false;
-	if ((touchJump1 < thJump1) && (touchJump2 < thJump2))
+    if ((touchJump1 < thJump1) && (touchJump2 < thJump2))
         bJump = true;
     else
-	if ((touchStrafeL < thStrafeL) && (touchStrafeR < thStrafeR) && (touchCrunch < thStrafeR))
+    if ((touchStrafeL < thStrafeL) && (touchStrafeR < thStrafeR) && (touchCrunch < thStrafeR))
         bCrunch = true;
     else {
         if (touchRotL < thRotL) // rotate left

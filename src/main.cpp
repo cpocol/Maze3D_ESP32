@@ -32,37 +32,37 @@ int angleC = 1400;
 int elevation_perc = 0; //as percentage from wall half height
 
 float X2Rad(int X) {
-	return (float)X * 3.1415f / aroundh;
+    return (float)X * 3.1415f / aroundh;
 }
 
 void setup() {
-	int16_t i, j;
-	// precalculate
-	for (int16_t a = 0; a < around; a++) {
-		float angf = X2Rad(a);
+    int16_t i, j;
+    // precalculate
+    for (int16_t a = 0; a < around; a++) {
+        float angf = X2Rad(a);
 
         // tangent (theoretical range is [-inf..+inf], in practice (-128..+128) is fine)
         fptype maxTan = (((fptype)128) << fp) - 1;
-		float temp = tan(angf) * (1 << fp);
+        float temp = tan(angf) * (1 << fp);
         Tan_fp[a] = (fptype)temp;
         if (temp > maxTan)
             Tan_fp[a] = maxTan;
         if (temp < -maxTan)
             Tan_fp[a] = -maxTan;
 
-		// cotangent
+        // cotangent
         temp = 1 / tanf(angf) * (((fptype)1) << fp);
         CTan_fp[a] = (fptype)temp;
         if (temp > maxTan)
             CTan_fp[a] = maxTan;
         if (temp < -maxTan)
             CTan_fp[a] = -maxTan;
-	}
+    }
 
-	display.init();
-	display.setRotation(1);
-	display.setSwapBytes(true);
-	display.fillScreen(TFT_BLACK);
+    display.init();
+    display.setRotation(1);
+    display.setSwapBytes(true);
+    display.fillScreen(TFT_BLACK);
 
     initController();
 
@@ -158,38 +158,38 @@ void RenderColumn(int col, int h, int textureColumn) {
         minRow = 0;
     }
 
-	uint16_t* screenAddr = screen + minRow * screenW + col;
-	//const uint16_t* textureAddr = Texture + textureColumn;
-	const uint16_t* textureAddr = Texture + textureColumn * texRes; // huge speedup: 90 degs pre-rotated texture
+    uint16_t* screenAddr = screen + minRow * screenW + col;
+    //const uint16_t* textureAddr = Texture + textureColumn;
+    const uint16_t* textureAddr = Texture + textureColumn * texRes; // huge speedup: 90 degs pre-rotated texture
     for (int row = minRow; row < maxRow; row++) {
-		//*screenAddr = *(textureAddr + textureRow_fp / 1024 * texRes); // access texture column wise
-		*screenAddr = *(textureAddr + (textureRow_fp >> 22)); // rotated texture - access it row wise (cache memory principles)
-		textureRow_fp += Dh_fp;
-		screenAddr += screenW;
-	}
+        //*screenAddr = *(textureAddr + textureRow_fp / 1024 * texRes); // access texture column wise
+        *screenAddr = *(textureAddr + (textureRow_fp >> 22)); // rotated texture - access it row wise (cache memory principles)
+        textureRow_fp += Dh_fp;
+        screenAddr += screenW;
+    }
 }
 
 auto t_prev = millis();
 void Render() {
-	auto t_start = millis();
+    auto t_start = millis();
 
-	memset(screen, 0, sizeof(uint16_t) * screenW * screenH);
-	auto t_clear = millis();
+    memset(screen, 0, sizeof(uint16_t) * screenW * screenH);
+    auto t_clear = millis();
 
-	int32_t viewerToScreen_sq = sq(screenWh) * 3; // FOV = 60 degs => viewerToScreen = screenWh * sqrt(3)
-	uint32_t textureColumn;
-	for (int16_t col = 0; col < screenW; col++) {
-		int16_t ang = (screenWh - col + angleC + around) % around;
+    int32_t viewerToScreen_sq = sq(screenWh) * 3; // FOV = 60 degs => viewerToScreen = screenWh * sqrt(3)
+    uint32_t textureColumn;
+    for (int16_t col = 0; col < screenW; col++) {
+        int16_t ang = (screenWh - col + angleC + around) % around;
         int xHit, yHit;
         Cast(ang, xHit, yHit);
 
-		uint32_t textureColumn = ((xHit + yHit) % sqRes) * texRes / sqRes;
+        uint32_t textureColumn = ((xHit + yHit) % sqRes) * texRes / sqRes;
 
         int dist_sq = sq(xC - xHit) + sq(yC - yHit) + 1; // +1 avoids division by zero
         int h = int(sqRes * sqrt((viewerToScreen_sq + sq(screenWh - col)) / (float)dist_sq) + 0.5);
 
         RenderColumn(col, h, textureColumn);
-	}
+    }
 
     // mirror image; we need this because the map's CS is left handed while the ray casting works right handed
     for (int row = 0; row < screenH; row++)
@@ -199,22 +199,22 @@ void Render() {
             *(screen + row * screenW + screenW - 1 - col) = aux;
         }
     
-	auto t_render = millis();
+    auto t_render = millis();
 
-	display.pushImage(0, 0, screenW, screenH, screen);
-	auto t_show = millis();
-	
-	int y = 1;
-	//display.setCursor(1, y);   display.printf("clear:  %2d", t_clear  - t_start);   y += 12;  - shows 0 ms
-	//display.setCursor(1, y);   display.printf("render: %2d", t_render - t_start);   y += 12;
-	//display.setCursor(1, y);   display.printf("show:   %2d", t_show   - t_render);  y += 12;
-	//display.setCursor(1, y);   display.printf("between: %d", t_start  - t_prev);    y += 12;
-	//display.setCursor(1, y);   display.printf("FPS:    %2d", 1000 / (t_show - t_prev));    y += 12;
-	t_prev = t_show;
+    display.pushImage(0, 0, screenW, screenH, screen);
+    auto t_show = millis();
+    
+    int y = 1;
+    //display.setCursor(1, y);   display.printf("clear:  %2d", t_clear  - t_start);   y += 12;  - shows 0 ms
+    //display.setCursor(1, y);   display.printf("render: %2d", t_render - t_start);   y += 12;
+    //display.setCursor(1, y);   display.printf("show:   %2d", t_show   - t_render);  y += 12;
+    //display.setCursor(1, y);   display.printf("between: %d", t_start  - t_prev);    y += 12;
+    //display.setCursor(1, y);   display.printf("FPS:    %2d", 1000 / (t_show - t_prev));    y += 12;
+    t_prev = t_show;
 }
 
 void loop() {
-	Render();
+    Render();
     loopController(xC, yC, angleC, around);
 
     vTaskDelay(10); // limit the render FPS in order to reduce the render_refresh/scrren_refresh interferences
