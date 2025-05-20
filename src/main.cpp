@@ -10,10 +10,6 @@
 #define sq(x) ((x)*(x))
 #define min(a,b) ((a) < (b) ? (a) : (b))
 
-// Buttons
-#define BUTTON1 35
-#define BUTTON2 0
-
 // display
 TFT_eSPI display = TFT_eSPI(); // Invoke library, pins defined in User_Setup.h
 
@@ -36,6 +32,14 @@ float X2Rad(int X) {
 }
 
 void setup() {
+    Serial.begin(115200);
+    Serial.println("Setup BEGIN");
+
+    display.init();
+    display.setRotation(1);
+    display.setSwapBytes(true);
+    display.fillScreen(TFT_BLACK);
+
     int16_t i, j;
     // precalculate
     for (int16_t a = 0; a < around; a++) {
@@ -59,15 +63,9 @@ void setup() {
             CTan_fp[a] = -maxTan;
     }
 
-    display.init();
-    display.setRotation(1);
-    display.setSwapBytes(true);
-    display.fillScreen(TFT_BLACK);
-
     initController();
 
-    Serial.begin(115200);
-    Serial.println("Start");
+    Serial.println("Setup END");
 }
 
 //returns wall ID (as map position and cell face)
@@ -152,7 +150,6 @@ void RenderColumn(int col, int h, int textureColumn) {
     int minRow = ((100 - elevation_perc) * (2 * screenHh - h) / 2 + elevation_perc * screenHh) / 100;
     int maxRow = min(minRow + h, screenH);
 
-    int minRowOrig = minRow;
     if (minRow < 0) { // clip
         textureRow_fp = -(minRow * Dh_fp);
         minRow = 0;
@@ -183,7 +180,7 @@ void Render() {
         int xHit, yHit;
         Cast(ang, xHit, yHit);
 
-        uint32_t textureColumn = ((xHit + yHit) % sqRes) * texRes / sqRes;
+        textureColumn = ((xHit + yHit) % sqRes) * texRes / sqRes;
 
         int dist_sq = sq(xC - xHit) + sq(yC - yHit) + 1; // +1 avoids division by zero
         int h = int(sqRes * sqrt((viewerToScreen_sq + sq(screenWh - col)) / (float)dist_sq) + 0.5);

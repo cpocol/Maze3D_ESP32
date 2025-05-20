@@ -87,9 +87,9 @@ void loopController(int& x, int& y, int& angle, int around) {
     int touchStrafeL = touchRead(T9);
     int touchStrafeR = touchRead(T7);
     int touchCrunch = touchRead(T8);
-    Serial.println("Touch2 = " + String(touchRotL) + " Touch3 = " + String(touchJump1)
-        + " Touch4 = " + String(touchJump2) + " Touch5 = " + String(touchRotR)
-        + " Touch9 = " + String(touchStrafeL) + " Touch8 = " + String(touchCrunch) + " Touch7 = " + String(touchStrafeR));
+    // Serial.println("\e[95mTouch2 = " + String(touchRotL) + "\e[39;49m Touch3 = " + String(touchJump1)
+    //     + " Touch4 = " + String(touchJump2) + " Touch5 = " + String(touchRotR)
+    //     + " Touch9 = " + String(touchStrafeL) + " Touch8 = " + String(touchCrunch) + " Touch7 = " + String(touchStrafeR));
     int thRotL = 80, thJump1 = 80, thJump2 = 80, thRotR = 80; // chosen empirically
     int thStrafeL = 90, thCrunch = 90, thStrafeR = 90;
 
