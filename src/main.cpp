@@ -204,9 +204,12 @@ void Render() {
     int y = 1;
     //display.setCursor(1, y);   display.printf("clear:  %2d", t_clear  - t_start);   y += 12;  - shows 0 ms
     //display.setCursor(1, y);   display.printf("render: %2d", t_render - t_start);   y += 12;
-    //display.setCursor(1, y);   display.printf("show:   %2d", t_show   - t_render);  y += 12;
+    //display.setCursor(1, y);   display.printf("send to screen:   %2d", t_show   - t_render);  y += 12;
     //display.setCursor(1, y);   display.printf("between: %d", t_start  - t_prev);    y += 12;
     //display.setCursor(1, y);   display.printf("FPS:    %2d", 1000 / (t_show - t_prev));    y += 12;
+
+    //Serial.printf("send to screen:   %2d\n", t_show   - t_render);
+
     t_prev = t_show;
 }
 
